@@ -1,4 +1,4 @@
-name: Build & Deploy Vue to GitHub Pages
+name: Deploy static files to GitHub Pages
 
 on:
   push:
@@ -6,32 +6,15 @@ on:
       - main
 
 jobs:
-  build-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Setup Node
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18
-
-    - name: Install dependencies
-      run: npm install
-
-    - name: Create .env file from GitHub Secrets
-      run: |
-        echo "VUE_APP_FIREBASE_APIKEY=${{ secrets.VUE_APP_FIREBASE_APIKEY }}" >> .env
-        echo "VUE_APP_FIREBASE_AUTHDOMAIN=${{ secrets.VUE_APP_FIREBASE_AUTHDOMAIN }}" >> .env
-        echo "VUE_APP_FIREBASE_PROJECTID=${{ secrets.VUE_APP_FIREBASE_PROJECTID }}" >> .env
-
-    - name: Build
-      run: npm run build
-
-    - name: Deploy to GitHub Pages
+    - name: Deploy static site
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist
+        publish_dir: ./  # ルートフォルダに index.html がある場合
