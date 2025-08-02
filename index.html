@@ -29,6 +29,10 @@
             fill: #4caf50;
         }
 
+        .other-user-visited {
+            fill: #2196f3;
+        }
+
         /* 都道府県ホバー時のスタイル */
         g[data-code]:hover {
             opacity: 0.7;
@@ -43,19 +47,31 @@
             <span>ようこそ、{{ userName }}さん！</span>
             <button @click="logout">ログアウト</button>
         </div>
+
         <h1>日本地図</h1>
         <p>訪れたことのある都道府県をクリックしてください</p>
+
+        <div v-if="isLoggedIn">
+            <label for="user-selector">他のユーザーの地図を見る：</label>
+            <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
+                <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
+                <option v-for="user in otherUsers" :key="user.uid" :value="user.uid">
+                    {{ user.displayName }}
+                </option>
+            </select>
+        </div>
+
         <div v-html="svgMap" @click="togglePrefecture"></div>
     </div>
 
     <script>
         const { createApp } = Vue;
-
         const config = {
             apiKey: "AIzaSyAjBXKNDW7DGy5kL6Ec84RL29fv1GbqlPs",
             authDomain: "visitedprefecture.firebaseapp.com",
             projectId: "visitedprefecture"
         };
+
         // Firebaseを初期化
         firebase.initializeApp(config);
         const auth = firebase.auth();
@@ -67,8 +83,20 @@
                     svgMap: '',
                     visited: {},
                     isLoggedIn: false,
-                    userName: ''
+                    userName: '',
+                    userId: '',
+                    users: [],
+                    selectedUser: '',
+                    currentUser: null,
                 };
+            },
+            computed: {
+                isCurrentUserMap() {
+                    return this.selectedUser === this.userId;
+                },
+                otherUsers() {
+                    return this.users.filter(user => user.uid !== this.userId);
+                }
             },
             mounted() {
                 // ログイン状態の監視
@@ -77,7 +105,9 @@
                         this.isLoggedIn = true;
                         this.userId = user.uid;
                         this.userName = user.displayName;
-                        this.fetchRemoteData();
+                        this.currentUser = { uid: user.uid, displayName: user.displayName };
+                        this.selectedUser = this.userId; // 初期表示は自分
+                        this.fetchUsers();
                     } else {
                         // ログアウトしているか未ログインの場合、login.htmlへ遷移
                         window.location.href = 'login.html';
@@ -93,6 +123,11 @@
             },
             methods: {
                 togglePrefecture(event) {
+                    // 他のユーザーの地図を表示している場合は変更不可
+                    if (!this.isCurrentUserMap) {
+                        alert("他のユーザーの地図は編集できません。");
+                        return;
+                    }
                     if (!this.isLoggedIn) {
                         alert("ログインしてください。");
                         return;
@@ -106,20 +141,31 @@
                 },
                 applyVisitedStyles() {
                     this.$nextTick(() => {
+                        // 全てのクラスをリセット
                         document.querySelectorAll('g[data-code]').forEach(g => {
-                            g.classList.remove('visited');
+                            g.classList.remove('visited', 'other-user-visited');
                         });
+                        // 選択中のユーザーのデータに基づいてスタイルを適用
+                        const className = this.isCurrentUserMap ? 'visited' : 'other-user-visited';
                         Object.keys(this.visited).forEach(code => {
                             if (this.visited[code]) {
                                 const g = document.querySelector(`g[data-code="${code}"]`);
-                                if (g) g.classList.add('visited');
+                                if (g) g.classList.add(className);
                             }
                         });
                     });
                 },
-                async fetchRemoteData() {
-                    if (!this.userId) return;
-                    const doc = await db.collection("users").doc(this.userId).get();
+                async fetchUsers() {
+                    const snapshot = await db.collection("users").get();
+                    this.users = snapshot.docs.map(doc => ({
+                        uid: doc.id,
+                        displayName: doc.data().displayName || '名無し'
+                    }));
+                    this.fetchUserData();
+                },
+                async fetchUserData() {
+                    if (!this.selectedUser) return;
+                    const doc = await db.collection("users").doc(this.selectedUser).get();
                     if (doc.exists) {
                         this.visited = doc.data();
                     } else {
@@ -129,12 +175,16 @@
                 },
                 async saveRemoteData() {
                     if (!this.userId) return;
-                    await db.collection("users").doc(this.userId).set(this.visited);
+                    // 自分自身のデータに表示名も保存
+                    await db.collection("users").doc(this.userId).set(
+                        { ...this.visited, displayName: this.userName },
+                        { merge: true }
+                    );
                 },
                 logout() {
                     auth.signOut();
                 }
-            }
+            },
         }).mount('#app');
     </script>
 </body>
