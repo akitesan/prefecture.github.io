@@ -6,7 +6,7 @@ const config = {
     projectId: "PROJECT_ID"
 };  
 
-firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(config);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
