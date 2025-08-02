@@ -16,8 +16,8 @@ jobs:
       - name: Replace secrets in script.js
         run: |
           sed -i "s|API_KEY|${{ secrets.API_KEY }}|g" script.js
-          sed -i "s|VUE_APP_FIREBASE_AUTHDOMAIN|${{ secrets.VUE_APP_FIREBASE_AUTHDOMAIN }}|g" script.js   
-          sed -i "s|VUE_APP_FIREBASE_PROJECTID|${{ secrets.VUE_APP_FIREBASE_PROJECTID }}|g" script.js
+          sed -i "s|authDomain|${{ secrets.AUTHDOMAIN }}|g" script.js   
+          sed -i "s|projectId|${{ secrets.PROJECTID }}|g" script.js
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
