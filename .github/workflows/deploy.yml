@@ -1,4 +1,4 @@
-name: Deploy static files to GitHub Pages
+name: Build & Deploy Vue to GitHub Pages
 
 on:
   push:
@@ -6,15 +6,21 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-deploy:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
       uses: actions/checkout@v3
 
-    - name: Deploy static site
+    - name: Create .env file from GitHub Secrets
+      run: |
+        echo "VUE_APP_FIREBASE_APIKEY=${{ secrets.VUE_APP_FIREBASE_APIKEY }}" >> .env
+        echo "VUE_APP_FIREBASE_AUTHDOMAIN=${{ secrets.VUE_APP_FIREBASE_AUTHDOMAIN }}" >> .env
+        echo "VUE_APP_FIREBASE_PROJECTID=${{ secrets.VUE_APP_FIREBASE_PROJECTID }}" >> .env
+
+    - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./  # ルートフォルダに index.html がある場合
+        publish_dir: ./
