@@ -2,9 +2,17 @@ const { createApp } = Vue;
 
 createApp({
     data() {
+        let visited = {};
+        try {
+            const raw = localStorage.getItem('visited');
+            if (raw) visited = JSON.parse(raw);
+        } catch (e) {
+            // 不正な値の場合は初期化
+            localStorage.removeItem('visited');
+        }
         return {
             svgMap: '',
-            visited: JSON.parse(localStorage.getItem('visited') || {})
+            visited
         };
     },
     mounted() {
