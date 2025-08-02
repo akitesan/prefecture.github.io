@@ -1,5 +1,28 @@
 const { createApp } = Vue;
 
+const firebaseConfig = {
+    apiKey: "AIzaSyAjBXKNDW7DGy5kL6Ec84RL29fv1GbqlPs",
+    authDomain: "visitedprefecture.firebaseapp.com",
+    projectId: "visitedprefecture"};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+let userId = null;
+
+function loginWithGoogle() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider)
+        .then(result => {
+            const user = result.user;
+            console.log("ログイン成功:", user.displayName);
+        })
+        .catch(error => {
+            console.error("ログイン失敗:", error.message);
+        });
+}
+
 createApp({
     data() {
         let visited = {};
@@ -16,6 +39,7 @@ createApp({
         };
     },
     mounted() {
+        const auth = firebase.auth();
         fetch('map-full.svg')
             .then(res => res.text())
             .then(svg => {
@@ -31,6 +55,7 @@ createApp({
             this.visited[code] = !this.visited[code];
             localStorage.setItem('visited', JSON.stringify(this.visited));
             g.classList.toggle('visited');
+            this.saveRemoteData(); // ← サーバーにも保存
         },
         applyVisitedStyles() {
             this.$nextTick(() => {
@@ -41,6 +66,19 @@ createApp({
                     }
                 });
             });
-        }
+        },
+        async fetchRemoteData() {
+            if (!this.userId) return;
+            const doc = await db.collection("users").doc(this.userId).get();
+            if (doc.exists) {
+                this.visited = doc.data();
+                this.applyVisitedStyles();
+            }
+        },
+        async saveRemoteData() {
+            if (!this.userId) return;
+            await db.collection("users").doc(this.userId).set(this.visited);
+        },
+
     }
 }).mount('#app');
