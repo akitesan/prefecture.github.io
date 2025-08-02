@@ -3,20 +3,140 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>訪れた都道府県マップ</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>都道府県マップ</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #app svg {
+            width: 100%;
+            height: auto;
+        }
+
+        .visited {
+            fill: #4caf50;
+        }
+
+        /* 都道府県ホバー時のスタイル */
+        g[data-code]:hover {
+            opacity: 0.7;
+            cursor: pointer;
+        }
+    </style>
 </head>
 
 <body>
     <div id="app">
-        <h1>訪れた都道府県マップ</h1>
+        <div class="user-info" v-if="isLoggedIn">
+            <span>ようこそ、{{ userName }}さん！</span>
+            <button @click="logout">ログアウト</button>
+        </div>
+        <h1>日本地図</h1>
+        <p>訪れたことのある都道府県をクリックしてください</p>
         <div v-html="svgMap" @click="togglePrefecture"></div>
     </div>
-    <script src="script.js"></script>
+
+    <script>
+        const { createApp } = Vue;
+
+        const config = {
+            apiKey: "API_KEY",
+            authDomain: "AUTH_DOMAIN",
+            projectId: "PROJECT_ID"
+        };
+        // Firebaseを初期化
+        firebase.initializeApp(config);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        createApp({
+            data() {
+                return {
+                    svgMap: '',
+                    visited: {},
+                    isLoggedIn: false,
+                    userName: ''
+                };
+            },
+            mounted() {
+                // ログイン状態の監視
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        this.isLoggedIn = true;
+                        this.userId = user.uid;
+                        this.userName = user.displayName;
+                        this.fetchRemoteData();
+                    } else {
+                        // ログアウトしているか未ログインの場合、login.htmlへ遷移
+                        window.location.href = 'login.html';
+                    }
+                });
+
+                // SVGの読み込み
+                fetch('map-full.svg')
+                    .then(res => res.text())
+                    .then(svg => {
+                        this.svgMap = svg;
+                    });
+            },
+            methods: {
+                togglePrefecture(event) {
+                    if (!this.isLoggedIn) {
+                        alert("ログインしてください。");
+                        return;
+                    }
+                    const g = event.target.closest('g[data-code]');
+                    if (!g) return;
+                    const code = g.getAttribute('data-code');
+                    this.visited[code] = !this.visited[code];
+                    g.classList.toggle('visited');
+                    this.saveRemoteData();
+                },
+                applyVisitedStyles() {
+                    this.$nextTick(() => {
+                        document.querySelectorAll('g[data-code]').forEach(g => {
+                            g.classList.remove('visited');
+                        });
+                        Object.keys(this.visited).forEach(code => {
+                            if (this.visited[code]) {
+                                const g = document.querySelector(`g[data-code="${code}"]`);
+                                if (g) g.classList.add('visited');
+                            }
+                        });
+                    });
+                },
+                async fetchRemoteData() {
+                    if (!this.userId) return;
+                    const doc = await db.collection("users").doc(this.userId).get();
+                    if (doc.exists) {
+                        this.visited = doc.data();
+                    } else {
+                        this.visited = {};
+                    }
+                    this.applyVisitedStyles();
+                },
+                async saveRemoteData() {
+                    if (!this.userId) return;
+                    await db.collection("users").doc(this.userId).set(this.visited);
+                },
+                logout() {
+                    auth.signOut();
+                }
+            }
+        }).mount('#app');
+    </script>
 </body>
 
 </html>
