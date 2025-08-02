@@ -1,9 +1,9 @@
 const { createApp } = Vue;
 
 const config = {
-    apiKey: "__API_KEY__",
-    authDomain: "__AUTH_DOMAIN__",
-    projectId: "__PROJECT_ID__"
+    apiKey: "API_KEY",
+    authDomain: "AUTH_DOMAIN",
+    projectId: "PROJECT_ID"
 };  
 
 firebase.initializeApp(firebaseConfig);
