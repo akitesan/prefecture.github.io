@@ -1,4 +1,4 @@
-name: Build & Deploy Vue to GitHub Pages
+name: Deploy static site with secrets
 
 on:
   push:
@@ -6,21 +6,21 @@ on:
       - main
 
 jobs:
-  build-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+      - name: Checkout source
+        uses: actions/checkout@v3
 
-    - name: Create .env file from GitHub Secrets
-      run: |
-        echo "VUE_APP_FIREBASE_APIKEY=${{ secrets.VUE_APP_FIREBASE_APIKEY }}" >> .env
-        echo "VUE_APP_FIREBASE_AUTHDOMAIN=${{ secrets.VUE_APP_FIREBASE_AUTHDOMAIN }}" >> .env
-        echo "VUE_APP_FIREBASE_PROJECTID=${{ secrets.VUE_APP_FIREBASE_PROJECTID }}" >> .env
+      - name: Replace secrets in script.js
+        run: |
+          sed -i "s|__API_KEY__|${{ secrets.API_KEY }}|g" script.js
+          sed -i "s|__AUTH_DOMAIN__|${{ secrets.AUTH_DOMAIN }}|g" script.js   
+          sed -i "s|__PROJECT_ID__|${{ secrets.PROJECT_ID }}|g" script.js
 
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
