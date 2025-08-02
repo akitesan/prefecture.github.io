@@ -1,0 +1,5 @@
+<div id="app">
+    <button v-if="!isLoggedIn" @click="loginWithGoogle">Googleでログイン</button>
+    <button v-else @click="logout">ログアウト</button>
+    <div v-html="svgMap" @click="togglePrefecture"></div>
+</div>
