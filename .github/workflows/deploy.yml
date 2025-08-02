@@ -15,7 +15,7 @@ jobs:
 
       - name: Replace secrets in script.js
         run: |
-          sed -i "s|API_KEY__|${{ secrets.API_KEY }}|g" script.js
+          sed -i "s|API_KEY|${{ secrets.API_KEY }}|g" script.js
           sed -i "s|VUE_APP_FIREBASE_AUTHDOMAIN|${{ secrets.VUE_APP_FIREBASE_AUTHDOMAIN }}|g" script.js   
           sed -i "s|VUE_APP_FIREBASE_PROJECTID|${{ secrets.VUE_APP_FIREBASE_PROJECTID }}|g" script.js
 
