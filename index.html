@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>訪れた都道府県マップ</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <h1>訪れた都道府県マップ</h1>
+        <div v-html="svgMap" @click="togglePrefecture($event)"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+
+</html>

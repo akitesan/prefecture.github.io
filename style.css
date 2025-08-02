@@ -1,0 +1,14 @@
+body {
+    font-family: sans-serif;
+    padding: 20px;
+    text-align: center;
+}
+
+path {
+    stroke: #555;
+    stroke-width: 0.5;
+    cursor: pointer;
+}
+
+.visited {
+    fill: orange !important; }
