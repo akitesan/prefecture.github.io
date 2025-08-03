@@ -24,7 +24,8 @@ createApp({
             isLoading: true,
             error: null,
             currentView: 'map',
-            isMobileView: false
+            isMobileView: false,
+            isPublic: false, // 公開/非公開の状態を追加
         };
     },
     computed: {
@@ -54,7 +55,8 @@ createApp({
             const userDoc = await userDocRef.get();
             if (!userDoc.exists) {
                 await userDocRef.set({
-                    displayName: user.displayName || '名無し'
+                    displayName: user.displayName || '名無し',
+                    isPublic: false // 初回ログイン時に非公開に設定
                 }, { merge: true });
             }
             this.fetchUsers();
@@ -115,7 +117,8 @@ createApp({
             const snapshot = await db.collection("users").get();
             this.users = snapshot.docs.map(doc => ({
                 uid: doc.id,
-                displayName: doc.data().displayName || '名無し'
+                displayName: doc.data().displayName || '名無し',
+                isPublic: doc.data().isPublic || false // isPublic の状態を取得
             }));
             this.fetchUserData();
         },
@@ -126,13 +129,27 @@ createApp({
                 const data = doc.data();
                 const {
                     displayName,
+                    isPublic,
+                    comments,
                     ...visitedData
                 } = data;
                 this.visited = visitedData;
-                this.comments = data.comments || {};
+                this.comments = comments || {};
+                this.isPublic = isPublic; // 公開状態を更新
+                if (!this.isCurrentUserMap && !isPublic) {
+                    alert("このユーザーの地図は非公開です。");
+                    this.visited = {};
+                    this.comments = {};
+                    this.isPublic = false;
+                } else {
+                    this.visited = visitedData;
+                    this.comments = comments || {};
+                    this.isPublic = isPublic;
+                }
             } else {
                 this.visited = {};
                 this.comments = {};
+                this.isPublic = false;
             }
             this.applyVisitedStyles();
         },
@@ -141,7 +158,8 @@ createApp({
             await db.collection("users").doc(this.userId).set(
                 {
                     ...this.visited,
-                    displayName: this.userName
+                    displayName: this.userName,
+                    isPublic: this.isPublic // isPublic の状態を保存
                 }, {
                 merge: true
             }
@@ -167,6 +185,11 @@ createApp({
                 console.error("Error saving comments: ", error);
                 alert("コメントの保存中にエラーが発生しました。");
             }
+        },
+        async togglePublic() {
+            this.isPublic = !this.isPublic;
+            this.saveRemoteData();
+            alert(`地図を${this.isPublic ? '公開' : '非公開'}にしました。`);
         },
         async deleteMyData() {
             const user = auth.currentUser;

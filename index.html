@@ -23,13 +23,18 @@
             <h1>日本地図</h1>
             <p>訪れたことのある都道府県をクリックしてください</p>
             <div v-if="isLoggedIn">
-                <label for="user-selector">地図を見るユーザーを選択：</label>
-                <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
-                    <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
-                    <option v-for="(user, index) in otherUsers" :key="user.uid" :value="user.uid">
-                        他のユーザー {{ index + 1 }}
-                    </option>
-                </select>
+                <div class="user-controls">
+                    <label for="user-selector">地図を見るユーザーを選択：</label>
+                    <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
+                        <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
+                        <option v-for="(user, index) in otherUsers" :key="user.uid" :value="user.uid">
+                            他のユーザー {{ index + 1 }}
+                        </option>
+                    </select>
+                    <button v-if="isCurrentUserMap" @click="togglePublic" class="public-toggle-btn">
+                        {{ isPublic ? '公開中' : '非公開中' }}
+                    </button>
+                </div>
             </div>
             <div class="mobile-toggle">
                 <button @click="toggleView('map')" :class="{ active: currentView === 'map' }">地図</button>

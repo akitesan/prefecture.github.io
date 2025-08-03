@@ -27,6 +27,22 @@ header {
     text-align: center;
 }
 
+.user-info {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    align-items: center;
+}
+
+.user-controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-top: 1rem;
+}
+
 .map-container {
     grid-area: content;
     /* 新しいグリッドエリア名を定義 */
@@ -121,6 +137,29 @@ main {
 
 .save-btn:hover {
     background-color: #45a049;
+}
+
+/* 公開/非公開ボタンのスタイル */
+.public-toggle-btn {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.public-toggle-btn:hover {
+    opacity: 0.8;
+}
+
+.public-toggle-btn.public {
+    background-color: #4caf50;
+    color: white;
+}
+
+.public-toggle-btn.private {
+    background-color: #f44336;
+    color: white;
 }
 
 .visited {
