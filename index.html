@@ -57,7 +57,7 @@
             <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
                 <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
                 <option v-for="user in otherUsers" :key="user.uid" :value="user.uid">
-                    {{ user.displayName }}
+                    他のユーザー
                 </option>
             </select>
         </div>
@@ -157,7 +157,7 @@
                     });
                 },
                 async fetchUsers() {
-                    const snapshot = await db.collection("users").get();
+                    const snapshot = await db.collection("users").orderBy("uid").get();
                     this.users = snapshot.docs.map(doc => ({
                         uid: doc.id,
                         displayName: doc.data().displayName || '名無し'
