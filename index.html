@@ -14,16 +14,13 @@
 
 <body>
     <div id="app">
-        <div class="user-info" v-if="isLoggedIn">
+        <header class="user-info" v-if="isLoggedIn">
             <span>ようこそ、{{ userName }}さん！</span>
             <button @click="saveRemoteData">更新</button>
             <button @click="logout">ログアウト</button>
             <button @click="deleteMyData">アカウントを削除</button>
-        </div>
 
         <h1>日本地図</h1>
-        <p>訪れたことのある都道府県をクリックしてください。更新ボタンで情報が更新されます</p>
-
         <div v-if="isLoggedIn">
             <label for="user-selector">地図を見るユーザーを選択：</label>
             <select id="user-selector" v-model="selectedUser" @change="fetchUserData">

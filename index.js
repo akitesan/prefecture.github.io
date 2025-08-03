@@ -18,7 +18,7 @@ createApp({
             userId: '',
             users: [],
             selectedUser: '',
-            currentUser: null,
+            currentUser: null
         };
     },
     computed: {
@@ -27,6 +27,20 @@ createApp({
         },
         otherUsers() {
             return this.users.filter(user => user.uid !== this.userId);
+        },
+        sortedPrefecturesWithComments() {
+            const sortedKeys = Object.keys(this.prefectureNames).sort((a, b) => {
+                return parseInt(a, 10) - parseInt(b, 10);
+            });
+            return sortedKeys
+                .map(code => ({
+                    code,
+                    name: this.prefectureNames[code],
+                    data: this.visited[code] || {
+                        lastVisited: null,
+                        comment: this.editedComments[code] || ''
+                    }
+                }));
         }
     },
     mounted() {
@@ -36,11 +50,10 @@ createApp({
                 this.userId = user.uid;
                 this.userName = user.displayName;
                 this.currentUser = { uid: user.uid, displayName: user.displayName };
-                this.selectedUser = this.userId; // 初期表示は自分
+                this.selectedUser = this.userId;
                 const userDocRef = db.collection("users").doc(user.uid);
                 const userDoc = await userDocRef.get();
                 if (!userDoc.exists) {
-                    // 存在しない場合は、displayNameを保存
                     await userDocRef.set({
                         displayName: user.displayName || '名無し'
                     }, { merge: true });
@@ -50,13 +63,36 @@ createApp({
                 window.location.href = 'login.html';
             }
         });
+
         fetch('map-full.svg')
             .then(res => res.text())
             .then(svg => {
                 this.svgMap = svg;
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(svg, "image/svg+xml");
+                const names = {};
+                doc.querySelectorAll('g[data-code]').forEach(g => {
+                    const code = g.getAttribute('data-code');
+                    const titleElement = g.querySelector('title');
+                    if (titleElement) {
+                        const titleText = titleElement.textContent.trim();
+                        const japaneseName = titleText.split('/')[0].trim();
+                        names[code] = japaneseName;
+                    }
+                });
+                this.prefectureNames = names;
+
+                // SVGがDOMに挿入された後にスタイルとイベントリスナーを適用
+                this.$nextTick(() => {
+                    this.applyVisitedStyles();
+                    // イベントリスナーを一度だけ設定
+                    const mapContainer = document.getElementById('map-container');
+                    if (mapContainer) {
+                        mapContainer.addEventListener('click', this.togglePrefecture);
+                    }
+                });
             });
     },
-
     methods: {
         togglePrefecture(event) {
             if (!this.isCurrentUserMap) {
@@ -70,19 +106,28 @@ createApp({
             const g = event.target.closest('g[data-code]');
             if (!g) return;
             const code = g.getAttribute('data-code');
-            this.visited[code] = !this.visited[code];
-            g.classList.toggle('visited');
+
+            if (this.visited[code] && this.visited[code].lastVisited) {
+                delete this.visited[code];
+            } else {
+                this.visited[code] = {
+                    lastVisited: new Date().toISOString(),
+                    comment: this.editedComments[code] || ''
+                };
+            }
+            this.applyVisitedStyles();
+            this.saveRemoteData();
         },
         applyVisitedStyles() {
             this.$nextTick(() => {
-                document.querySelectorAll('g[data-code]').forEach(g => {
-                    g.classList.remove('visited', 'other-user-visited');
-                });
                 const className = this.isCurrentUserMap ? 'visited' : 'other-user-visited';
-                Object.keys(this.visited).forEach(code => {
-                    if (this.visited[code]) {
-                        const g = document.querySelector(`g[data-code="${code}"]`);
-                        if (g) g.classList.add(className);
+                const otherClassName = this.isCurrentUserMap ? 'other-user-visited' : 'visited';
+
+                document.querySelectorAll('g[data-code]').forEach(g => {
+                    g.classList.remove(className, otherClassName);
+                    const code = g.getAttribute('data-code');
+                    if (this.visited[code] && this.visited[code].lastVisited) {
+                        g.classList.add(className);
                     }
                 });
             });
@@ -101,20 +146,69 @@ createApp({
             if (doc.exists) {
                 const data = doc.data();
                 const { displayName, ...visitedData } = data;
-                this.visited = visitedData;
+
+                const processedVisitedData = {};
+                for (const key in visitedData) {
+                    if (visitedData[key] && visitedData[key].lastVisited) {
+                        processedVisitedData[key] = {
+                            lastVisited: visitedData[key].lastVisited,
+                            comment: visitedData[key].comment || ''
+                        };
+                    } else if (visitedData[key] === true) {
+                        processedVisitedData[key] = {
+                            lastVisited: null,
+                            comment: ''
+                        };
+                    }
+                }
+                this.visited = processedVisitedData;
+
+                this.editedComments = {};
+                for (const code in this.prefectureNames) {
+                    this.editedComments[code] = this.visited[code]?.comment || '';
+                }
             } else {
                 this.visited = {};
+                this.editedComments = {};
+                for (const code in this.prefectureNames) {
+                    this.editedComments[code] = '';
+                }
             }
             this.applyVisitedStyles();
         },
         async saveRemoteData() {
             if (!this.userId) return;
-            await db.collection("users").doc(this.userId).set(
-                { ...this.visited, displayName: this.userName },
-                { merge: true }
-            );
+            try {
+                await db.collection("users").doc(this.userId).set(
+                    { ...this.visited, displayName: this.userName },
+                    { merge: true }
+                );
+                this.isUpdated = true;
+                setTimeout(() => {
+                    this.isUpdated = false;
+                }, 2000);
+
+            } catch (error) {
+                console.error("データの更新中にエラーが発生しました: ", error);
+            }
         },
-        async deleteMyData() {
+        updateComment(code) {
+            if (!this.isCurrentUserMap) {
+                alert("他のユーザーの地図は編集できません。");
+                return;
+            }
+            if (!this.visited[code]) {
+                this.visited[code] = { lastVisited: null, comment: '' };
+            }
+            this.visited[code].comment = this.editedComments[code];
+        },
+        toggleSidebar() {
+            this.isSidebarVisible = !this.isSidebarVisible;
+        },
+        logout() {
+            auth.signOut();
+        },
+        deleteMyData() {
             const user = auth.currentUser;
             if (!user) {
                 alert("ログインしていません。");
@@ -123,10 +217,10 @@ createApp({
 
             if (confirm("本当にご自分のアカウントと全ての訪問履歴を削除してもよろしいですか？この操作は元に戻せません。")) {
                 try {
-                    await db.collection("users").doc(this.userId).delete();
+                    db.collection("users").doc(this.userId).delete();
                     console.log("Firestore document successfully deleted!");
 
-                    await user.delete();
+                    user.delete();
                     console.log("User account successfully deleted!");
 
                     alert("アカウントと訪問履歴が削除されました。");
@@ -140,9 +234,6 @@ createApp({
                     }
                 }
             }
-        },
-        logout() {
-            auth.signOut();
         }
-    },
+    }
 }).mount('#app');
