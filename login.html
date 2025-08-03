@@ -7,31 +7,7 @@
     <title>ログイン</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f2f5;
-        }
-
-        .login-container {
-            text-align: center;
-            padding: 40px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="login.css">
 </head>
 
 <body>
@@ -39,37 +15,7 @@
         <h1>都道府県マップにログイン</h1>
         <button id="google-login-btn">Googleでログイン</button>
     </div>
-
-    <script>
-        // Firebaseの設定
-        const firebaseConfig = {
-            apiKey: "AIzaSyAjBXKNDW7DGy5kL6Ec84RL29fv1GbqlPs",
-            authDomain: "visitedprefecture.firebaseapp.com",
-            projectId: "visitedprefecture"
-        };
-        // Firebaseを初期化
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-
-        // ログイン状態を監視し、ログイン済みならindex.htmlへ遷移
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                window.location.href = 'index.html';
-            }
-        });
-
-        // ログインボタンのクリックイベントを設定
-        document.getElementById('google-login-btn').addEventListener('click', () => {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider)
-                .then(result => {
-                    console.log("ログイン成功:", result.user.displayName);
-                })
-                .catch(error => {
-                    console.error("ログイン失敗:", error.message);
-                });
-        });
-    </script>
+    <script src="login.js"></script>
 </body>
 
 </html>
