@@ -63,7 +63,7 @@
                 </ul>
             </div>
             <div v-else>
-                <h3>{{ users.find(u => u.uid === selectedUser)?.displayName || 'ユーザー' }}の訪問履歴</h3>
+                <h3> 他のユーザーのコメント </h3>
                 <ul class="prefecture-list">
                     <li v-for="prefecture in sortedPrefecturesWithComments" :key="prefecture.code">
                         <div class="prefecture-item">
