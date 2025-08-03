@@ -14,11 +14,15 @@
 
 <body>
     <div id="app">
-        <header class="user-info" v-if="isLoggedIn">
+        <div class="user-info" v-if="isLoggedIn">
             <span>ようこそ、{{ userName }}さん！</span>
             <button @click="logout">ログアウト</button>
-            <button @click="deleteMyData">アカウントを削除</button>
+            <button @click="deleteMyData">自分のアカウントを削除</button>
+        </div>
+
         <h1>日本地図</h1>
+        <p>訪れたことのある都道府県をクリックしてください</p>
+
         <div v-if="isLoggedIn">
             <label for="user-selector">地図を見るユーザーを選択：</label>
             <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
@@ -29,49 +33,6 @@
             </select>
         </div>
         <div v-html="svgMap" @click="togglePrefecture"></div>
-        <body>
-            <h1>日本地図</h1>
-            <p>訪れたことのある都道府県を押してください</p>
-            <div v-if="isLoggedIn">
-                <label for="user-selector">地図を見るユーザーを選択：</label>
-                <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
-                    <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
-                    <option v-for="(user, index) in otherUsers" :key="user.uid" :value="user.uid">
-                        他のユーザー {{ index + 1 }}
-                    </option>
-                </select>
-            </div>
-            <div v-html="svgMap" @click="togglePrefecture"></div>
-        </body>
-
-        <aside id="sidebar" :class="{ 'is-visible': isSidebarVisible }">
-            <button @click="toggleSidebar" class="sidebar-toggle-button">
-                {{ isSidebarVisible ? '閉じる' : '開く' }}
-            </button>
-            <div v-if="isCurrentUserMap">
-                <h3>コメントの追加</h3>
-                <ul class="prefecture-list">
-                    <li v-for="prefecture in sortedPrefecturesWithComments" :key="prefecture.code">
-                        <div class="prefecture-item">
-                            <span>{{ prefecture.name }}</span>
-                            <textarea v-model="editedComments[prefecture.code]" @change="updateComment(prefecture.code)"
-                                placeholder="コメントを追加..." rows="1"></textarea>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-            <div v-else>
-                <h3> 他のユーザーのコメント </h3>
-                <ul class="prefecture-list">
-                    <li v-for="prefecture in sortedPrefecturesWithComments" :key="prefecture.code">
-                        <div class="prefecture-item">
-                            <span>{{ prefecture.name }}</span>
-                            <p class="comment-display">{{ prefecture.data.comment || 'コメントなし' }}</p>
-                        </div>
-                    </li>
-                </ul>
-            </div>
-        </aside>
     </div>
     <script src="index.js"></script>
 </body>
