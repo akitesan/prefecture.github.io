@@ -16,7 +16,6 @@
     <div id="app">
         <header class="user-info" v-if="isLoggedIn">
             <span>ようこそ、{{ userName }}さん！</span>
-            <button @click="saveRemoteData">更新</button>
             <button @click="logout">ログアウト</button>
             <button @click="deleteMyData">アカウントを削除</button>
 
@@ -33,7 +32,7 @@
         <div v-html="svgMap" @click="togglePrefecture"></div>
         <body>
             <h1>日本地図</h1>
-            <p>訪れたことのある都道府県を押してください。保存する時は更新ボタンを押そう</p>
+            <p>訪れたことのある都道府県を押してください</p>
             <div v-if="isLoggedIn">
                 <label for="user-selector">地図を見るユーザーを選択：</label>
                 <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
@@ -51,7 +50,7 @@
                 {{ isSidebarVisible ? '閉じる' : '開く' }}
             </button>
             <div v-if="isCurrentUserMap">
-                <h3>あなたの訪問履歴</h3>
+                <h3>コメントの追加</h3>
                 <ul class="prefecture-list">
                     <li v-for="prefecture in sortedPrefecturesWithComments" :key="prefecture.code">
                         <div class="prefecture-item">
