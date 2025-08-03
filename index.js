@@ -72,7 +72,6 @@ createApp({
             const code = g.getAttribute('data-code');
             this.visited[code] = !this.visited[code];
             g.classList.toggle('visited');
-            this.saveRemoteData();
         },
         applyVisitedStyles() {
             this.$nextTick(() => {
