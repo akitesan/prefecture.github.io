@@ -14,25 +14,38 @@
 
 <body>
     <div id="app">
-        <div class="user-info" v-if="isLoggedIn">
-            <span>ようこそ、{{ userName }}さん！</span>
-            <button @click="logout">ログアウト</button>
-            <button @click="deleteMyData">自分のアカウントを削除</button>
-        </div>
-
-        <h1>日本地図</h1>
-        <p>訪れたことのある都道府県をクリックしてください</p>
-
-        <div v-if="isLoggedIn">
-            <label for="user-selector">地図を見るユーザーを選択：</label>
-            <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
-                <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
-                <option v-for="(user, index) in otherUsers" :key="user.uid" :value="user.uid">
-                    他のユーザー {{ index + 1 }}
-                </option>
-            </select>
-        </div>
-        <div v-html="svgMap" @click="togglePrefecture"></div>
+        <header>
+            <div class="user-info" v-if="isLoggedIn">
+                <span>ようこそ、{{ userName }}さん！</span>
+                <button @click="logout">ログアウト</button>
+                <button @click="deleteMyData">自分のアカウントを削除</button>
+            </div>
+            <h1>日本地図</h1>
+            <p>訪れたことのある都道府県をクリックしてください</p>
+            <div v-if="isLoggedIn">
+                <label for="user-selector">地図を見るユーザーを選択：</label>
+                <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
+                    <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
+                    <option v-for="(user, index) in otherUsers" :key="user.uid" :value="user.uid">
+                        他のユーザー {{ index + 1 }}
+                    </option>
+                </select>
+            </div>
+        </header>
+        <div class="map-container" v-html="svgMap" @click="togglePrefecture"></div>
+        <main>
+            <button @click="saveComments" class="save-btn">コメントを保存</button>
+            <ul class="prefecture-list">
+                <li v-for="prefecture in sortedPrefectures" :key="prefecture.code" class="prefecture-item">
+                    <div class="prefecture-info">
+                        <span class="prefecture-name">{{ prefecture.name }}</span>
+                    </div>
+                    <div class="comment-section">
+                        <textarea v-model="comments[prefecture.code]" placeholder="コメントを入力"></textarea>
+                    </div>
+                </li>
+            </ul>
+        </main>
     </div>
     <script src="index.js"></script>
 </body>

@@ -1,16 +1,120 @@
-body {
+body,
+html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
     font-family: sans-serif;
 }
 
 #app {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+        "header"
+        "map"
+        "list";
+    height: 100vh;
+}
+
+header {
+    grid-area: header;
+    padding: 1rem;
+    text-align: center;
+}
+
+.map-container {
+    grid-area: map;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
     align-items: center;
 }
 
-#app svg {
+.map-container svg {
     width: 100%;
     height: auto;
+    max-width: 100%;
+}
+
+main {
+    grid-area: list;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    max-width: 100%;
+    overflow-y: auto;
+}
+
+.prefecture-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.prefecture-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.prefecture-item:last-child {
+    border-bottom: none;
+}
+
+.prefecture-info {
+    flex-shrink: 0;
+    width: 120px;
+}
+
+.prefecture-code {
+    font-size: 0.8em;
+    color: #666;
+}
+
+.prefecture-name {
+    font-weight: bold;
+}
+
+.comment-section {
+    flex-grow: 1;
+    margin-left: 1rem;
+}
+
+.comment-section textarea {
+    width: 100%;
+    min-height: 40px;
+    box-sizing: border-box;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    resize: vertical;
+    font-size: 0.9em;
+}
+
+.save-btn {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #fff;
+    background-color: #4caf50;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 0;
+    flex-shrink: 0;
+}
+
+.save-btn:hover {
+    background-color: #45a049;
 }
 
 .visited {
@@ -21,8 +125,25 @@ body {
     fill: #2196f3;
 }
 
-/* 都道府県ホバー時のスタイル */
 g[data-code]:hover {
     opacity: 0.7;
     cursor: pointer;
+}
+
+@media (min-width: 768px) {
+    #app {
+        grid-template-columns: 2fr 1fr;
+        grid-template-rows: auto 1fr;
+        grid-template-areas:
+            "header header"
+            "map list";
+    }
+
+    header {
+        text-align: left;
+    }
+
+    main {
+        padding: 1rem;
+    }
 }

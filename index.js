@@ -19,6 +19,10 @@ createApp({
             users: [],
             selectedUser: '',
             currentUser: null,
+            prefectures: [],
+            comments: {},
+            isLoading: true,
+            error: null
         };
     },
     computed: {
@@ -27,36 +31,51 @@ createApp({
         },
         otherUsers() {
             return this.users.filter(user => user.uid !== this.userId);
+        },
+        sortedPrefectures() {
+            return [...this.prefectures].sort((a, b) => a.code - b.code);
         }
     },
-    mounted() {
-        auth.onAuthStateChanged(async (user) => {
-            if (user) {
-                this.isLoggedIn = true;
-                this.userId = user.uid;
-                this.userName = user.displayName;
-                this.currentUser = { uid: user.uid, displayName: user.displayName };
-                this.selectedUser = this.userId; // 初期表示は自分
-                const userDocRef = db.collection("users").doc(user.uid);
-                const userDoc = await userDocRef.get();
-                if (!userDoc.exists) {
-                    // 存在しない場合は、displayNameを保存
-                    await userDocRef.set({
-                        displayName: user.displayName || '名無し'
-                    }, { merge: true });
-                }
-                this.fetchUsers();
-            } else {
-                window.location.href = 'login.html';
-            }
+    async mounted() {
+        const userPromise = new Promise(resolve => {
+            auth.onAuthStateChanged(resolve);
         });
-        fetch('map-full.svg')
-            .then(res => res.text())
-            .then(svg => {
-                this.svgMap = svg;
-            });
-    },
 
+        const user = await userPromise;
+        if (user) {
+            this.isLoggedIn = true;
+            this.userId = user.uid;
+            this.userName = user.displayName;
+            this.currentUser = { uid: user.uid, displayName: user.displayName };
+            this.selectedUser = this.userId;
+            const userDocRef = db.collection("users").doc(user.uid);
+            const userDoc = await userDocRef.get();
+            if (!userDoc.exists) {
+                await userDocRef.set({
+                    displayName: user.displayName || '名無し'
+                }, { merge: true });
+            }
+            this.fetchUsers();
+        } else {
+            window.location.href = 'login.html';
+        }
+
+        const response = await fetch('map-full.svg');
+        this.svgMap = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(this.svgMap, "image/svg+xml");
+        const prefectureElements = doc.querySelectorAll('g.prefecture');
+
+        this.prefectures = Array.from(prefectureElements).map(el => {
+            const code = el.getAttribute('data-code');
+            const titleElement = el.querySelector('title');
+            let name = '';
+            const fullTitle = titleElement.textContent;
+            name = fullTitle.split(' / ')[0].trim();
+            return { code: code, name: name };
+        });
+        this.isLoading = false;
+    },
     methods: {
         togglePrefecture(event) {
             if (!this.isCurrentUserMap) {
@@ -101,19 +120,49 @@ createApp({
             const doc = await db.collection("users").doc(this.selectedUser).get();
             if (doc.exists) {
                 const data = doc.data();
-                const { displayName, ...visitedData } = data;
+                const {
+                    displayName,
+                    ...visitedData
+                } = data;
                 this.visited = visitedData;
+                this.comments = data.comments || {};
             } else {
                 this.visited = {};
+                this.comments = {};
             }
             this.applyVisitedStyles();
         },
         async saveRemoteData() {
             if (!this.userId) return;
             await db.collection("users").doc(this.userId).set(
-                { ...this.visited, displayName: this.userName },
-                { merge: true }
+                {
+                    ...this.visited,
+                    displayName: this.userName
+                }, {
+                merge: true
+            }
             );
+        },
+        async saveComments() {
+            if (!this.isCurrentUserMap) {
+                alert("他のユーザーのコメントは保存できません。");
+                return;
+            }
+            if (!this.userId) return;
+            try {
+                await db.collection("users").doc(this.userId).set(
+                    {
+                        comments: this.comments
+                    },
+                    {
+                        merge: true
+                    }
+                );
+                alert("コメントを保存しました。");
+            } catch (error) {
+                console.error("Error saving comments: ", error);
+                alert("コメントの保存中にエラーが発生しました。");
+            }
         },
         async deleteMyData() {
             const user = auth.currentUser;
@@ -145,5 +194,5 @@ createApp({
         logout() {
             auth.signOut();
         }
-    },
+    }
 }).mount('#app');
