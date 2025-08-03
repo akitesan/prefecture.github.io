@@ -56,8 +56,8 @@
             <label for="user-selector">地図を見るユーザーを選択：</label>
             <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
                 <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
-                <option v-for="user in otherUsers" :key="user.uid" :value="user.uid">
-                    {{ user.displayName }}
+                <option v-for="(user, index) in otherUsers" :key="user.uid" :value="user.uid">
+                    他のユーザー {{ index + 1 }}
                 </option>
             </select>
         </div>
@@ -157,7 +157,7 @@
                     });
                 },
                 async fetchUsers() {
-                    const snapshot = await db.collection("users").orderBy("uid").get();
+                    const snapshot = await db.collection("users").get();
                     this.users = snapshot.docs.map(doc => ({
                         uid: doc.id,
                         displayName: doc.data().displayName || '名無し'
