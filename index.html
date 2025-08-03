@@ -57,7 +57,7 @@
             <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
                 <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
                 <option v-for="user in otherUsers" :key="user.uid" :value="user.uid">
-                    他のユーザー
+                    {{ user.displayName }}
                 </option>
             </select>
         </div>
@@ -98,13 +98,21 @@
                 }
             },
             mounted() {
-                auth.onAuthStateChanged(user => {
+                auth.onAuthStateChanged(async (user) => {
                     if (user) {
                         this.isLoggedIn = true;
                         this.userId = user.uid;
                         this.userName = user.displayName;
                         this.currentUser = { uid: user.uid, displayName: user.displayName };
                         this.selectedUser = this.userId; // 初期表示は自分
+                        const userDocRef = db.collection("users").doc(user.uid);
+                        const userDoc = await userDocRef.get();
+                        if (!userDoc.exists) {
+                            // 存在しない場合は、displayNameを保存
+                            await userDocRef.set({
+                                displayName: user.displayName || '名無し'
+                            }, { merge: true });
+                        }
                         this.fetchUsers();
                     } else {
                         window.location.href = 'login.html';
