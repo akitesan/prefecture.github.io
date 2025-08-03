@@ -183,11 +183,6 @@ createApp({
                     { ...this.visited, displayName: this.userName },
                     { merge: true }
                 );
-                this.isUpdated = true;
-                setTimeout(() => {
-                    this.isUpdated = false;
-                }, 2000);
-
             } catch (error) {
                 console.error("データの更新中にエラーが発生しました: ", error);
             }
