@@ -22,7 +22,9 @@ createApp({
             prefectures: [],
             comments: {},
             isLoading: true,
-            error: null
+            error: null,
+            currentView: 'map',
+            isMobileView: false
         };
     },
     computed: {
@@ -75,6 +77,8 @@ createApp({
             return { code: code, name: name };
         });
         this.isLoading = false;
+        this.checkScreenSize();
+        window.addEventListener('resize', this.checkScreenSize);
     },
     methods: {
         togglePrefecture(event) {
@@ -193,6 +197,17 @@ createApp({
         },
         logout() {
             auth.signOut();
-        }
+        },
+        toggleView(view) {
+            this.currentView = view;
+        },
+        checkScreenSize() {
+            // 画面幅が768px未満かどうかを判定
+            this.isMobileView = window.innerWidth < 768;
+        },
+    },
+    beforeUnmount() {
+        // コンポーネントが破棄される前にリスナーを削除
+        window.removeEventListener('resize', this.checkScreenSize);
     }
 }).mount('#app');

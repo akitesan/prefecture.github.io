@@ -31,9 +31,14 @@
                     </option>
                 </select>
             </div>
+            <div class="mobile-toggle">
+                <button @click="toggleView('map')" :class="{ active: currentView === 'map' }">地図</button>
+                <button @click="toggleView('list')" :class="{ active: currentView === 'list' }">コメント</button>
+            </div>
         </header>
-        <div class="map-container" v-html="svgMap" @click="togglePrefecture"></div>
-        <main>
+        <div class="map-container" v-html="svgMap" @click="togglePrefecture"
+            v-show="isMobileView ? currentView === 'map' : true"></div>
+        <main v-show="isMobileView ? currentView === 'list' : true">
             <button @click="saveComments" class="save-btn">コメントを保存</button>
             <ul class="prefecture-list">
                 <li v-for="prefecture in sortedPrefectures" :key="prefecture.code" class="prefecture-item">

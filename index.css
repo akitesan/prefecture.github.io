@@ -1,3 +1,7 @@
+/*
+ * index.css
+ */
+
 body,
 html {
     margin: 0;
@@ -12,7 +16,7 @@ html {
     grid-template-columns: 1fr;
     grid-template-areas:
         "header"
-        "map"
+        "content"
         "list";
     height: 100vh;
 }
@@ -24,7 +28,8 @@ header {
 }
 
 .map-container {
-    grid-area: map;
+    grid-area: content;
+    /* 新しいグリッドエリア名を定義 */
     width: 100%;
     max-width: 100%;
     height: auto;
@@ -40,7 +45,8 @@ header {
 }
 
 main {
-    grid-area: list;
+    grid-area: content;
+    /* 新しいグリッドエリア名を定義 */
     display: flex;
     flex-direction: column;
     padding: 1rem;
@@ -54,7 +60,7 @@ main {
     margin: 0;
     width: 100%;
     flex-grow: 1;
-    overflow-y: auto;
+    overflow-y: visible;
 }
 
 .prefecture-item {
@@ -130,6 +136,29 @@ g[data-code]:hover {
     cursor: pointer;
 }
 
+/*
+ * 新しいCSSの追加
+ */
+.mobile-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+.mobile-toggle button {
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    cursor: pointer;
+}
+
+.mobile-toggle button.active {
+    background-color: #4caf50;
+    color: white;
+}
+
+/* 768px以上の画面幅ではPC版レイアウト */
 @media (min-width: 768px) {
     #app {
         grid-template-columns: 2fr 1fr;
@@ -145,5 +174,18 @@ g[data-code]:hover {
 
     main {
         padding: 1rem;
+    }
+
+    /* PC版ではモバイル用の切り替えボタンを非表示にする */
+    .mobile-toggle {
+        display: none;
+    }
+
+    .map-container {
+        grid-area: map;
+    }
+
+    main {
+        grid-area: list;
     }
 }
