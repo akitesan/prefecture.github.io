@@ -1,9 +1,8 @@
 body {
-    margin-right: 320px;
+    font-family: sans-serif;
 }
 
 #app {
-    font-family: sans-serif;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -26,69 +25,4 @@ body {
 g[data-code]:hover {
     opacity: 0.7;
     cursor: pointer;
-}
-
-#sidebar {
-    position: fixed;
-    top: 0;
-    right: -300px;
-    /* 非表示状態 */
-    width: 300px;
-    height: 100%;
-    background-color: #f5f5f5;
-    padding: 20px;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-    transition: right 0.3s ease;
-    overflow-y: auto;
-}
-
-#sidebar.is-visible {
-    right: 0;
-}
-
-.sidebar-toggle-button {
-    position: absolute;
-    left: -50px;
-    top: 20px;
-    width: 50px;
-    height: 30px;
-    background-color: #f5f5f5;
-    border: none;
-    cursor: pointer;
-    border-radius: 5px 0 0 5px;
-}
-
-.prefecture-list {
-    list-style: none;
-    padding: 0;
-    margin-top: 20px;
-}
-
-.prefecture-item {
-    padding: 10px;
-    border-bottom: 1px solid #ccc;
-}
-
-.prefecture-item span {
-    font-weight: bold;
-}
-
-.prefecture-item textarea,
-.comment-display {
-    width: 100%;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    padding: 5px;
-    box-sizing: border-box;
-    font-size: 14px;
-}
-
-.prefecture-item textarea:disabled {
-    background-color: #e9e9e9;
-}
-
-.comment-display {
-    white-space: pre-wrap;
-    /* 改行を保持 */
-    background-color: #f9f9f9;
 }
