@@ -1,3 +1,5 @@
+// index.js
+
 const { createApp } = Vue;
 const config = {
     apiKey: "AIzaSyAjBXKNDW7DGy5kL6Ec84RL29fv1GbqlPs",
@@ -23,6 +25,7 @@ createApp({
             isLoading: true,
             isPublic: false,
             hideNoCommentPrefectures: false,
+            isLoading: true
         };
     },
     computed: {
@@ -41,90 +44,94 @@ createApp({
         }
     },
     async mounted() {
-        const userPromise = new Promise(resolve => {
-            auth.onAuthStateChanged(resolve);
-        });
+        await new Promise(resolve => auth.onAuthStateChanged(resolve));
 
-        const user = await userPromise;
+        const user = auth.currentUser;
         if (user) {
             this.isLoggedIn = true;
             this.userId = user.uid;
             this.userName = user.displayName;
             this.currentUser = { uid: user.uid, displayName: user.displayName };
             this.selectedUser = this.userId;
+
+            // ユーザーデータが存在しない場合は作成
             const userDocRef = db.collection("users").doc(user.uid);
-            const userDoc = await userDocRef.get();
-            if (!userDoc.exists) {
-                await userDocRef.set({
-                    displayName: user.displayName || '名無し',
-                    isPublic: false
-                }, { merge: true });
-            }
-            this.fetchUsers();
+            await userDocRef.set({
+                displayName: user.displayName || '名無し',
+                isPublic: false
+            }, { merge: true });
+
+            // ユーザーと都道府県データの両方を並行して取得
+            await Promise.all([
+                this.fetchUsers(),
+                this.initializePrefectures()
+            ]);
+
+            this.isLoading = false;
         } else {
             window.location.href = 'login.html';
         }
-
-        // 地図データを削除し、都道府県のリストを直接定義
-        const prefectureNames = [
-            '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
-            '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
-            '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
-            '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
-            '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
-            '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
-            '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
-        ];
-        this.prefectures = prefectureNames.map((name, index) => ({
-            code: (index + 1).toString().padStart(2, '0'),
-            name: name
-        }));
-
-        this.isLoading = false;
     },
     methods: {
-        updateVisitedStatus() {
-            // チェックボックスの状態が変更されたときにvisitedオブジェクトを更新
-            // このメソッド自体は特に何もしないが、@changeイベントをトリガーするために必要
+        // 都道府県リストの初期化をメソッドとして分離
+        initializePrefectures() {
+            const prefectureNames = [
+                '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
+                '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
+                '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
+                '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
+                '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+                '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
+                '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
+            ];
+            this.prefectures = prefectureNames.map((name, index) => ({
+                code: (index + 1).toString().padStart(2, '0'),
+                name: name
+            }));
         },
         async fetchUsers() {
-            const snapshot = await db.collection("users").get();
-            this.users = snapshot.docs.map(doc => ({
-                uid: doc.id,
-                displayName: doc.data().displayName || '名無し',
-                isPublic: doc.data().isPublic || false
-            }));
-            this.fetchUserData();
+            try {
+                const snapshot = await db.collection("users").get();
+                this.users = snapshot.docs.map(doc => ({
+                    uid: doc.id,
+                    displayName: doc.data().displayName || '名無し',
+                    isPublic: doc.data().isPublic || false
+                }));
+                this.fetchUserData();
+            } catch (error) {
+                console.error("Error fetching users:", error);
+                alert("ユーザーリストの取得中にエラーが発生しました。");
+            }
         },
         async fetchUserData() {
             if (!this.selectedUser) return;
-            const doc = await db.collection("users").doc(this.selectedUser).get();
-            if (doc.exists) {
-                const data = doc.data();
-                const {
-                    displayName,
-                    isPublic,
-                    comments,
-                    ...visitedData
-                } = data;
+            try {
+                const doc = await db.collection("users").doc(this.selectedUser).get();
+                if (doc.exists) {
+                    const data = doc.data();
+                    const { displayName, isPublic, comments, ...visitedData } = data;
 
-                this.isPublic = isPublic;
-                if (!this.isCurrentUserList && !isPublic) {
-                    alert("このユーザーのリストは非公開です。");
+                    this.isPublic = isPublic;
+                    if (!this.isCurrentUserList && !isPublic) {
+                        alert("このユーザーのリストは非公開です。");
+                        this.visited = {};
+                        this.comments = {};
+                        this.isPublic = false;
+                    } else {
+                        // visitedDataをboolean値に変換し、visitedオブジェクトを更新
+                        this.visited = Object.fromEntries(
+                            Object.entries(visitedData).map(([key, value]) => [key, !!value])
+                        );
+                        this.comments = comments || {};
+                    }
+                } else {
                     this.visited = {};
                     this.comments = {};
                     this.isPublic = false;
-                } else {
-                    // visitedDataをboolean値に変換
-                    this.visited = Object.fromEntries(
-                        Object.entries(visitedData).map(([key, value]) => [key, !!value])
-                    );
-                    this.comments = comments || {};
                 }
-            } else {
-                this.visited = {};
-                this.comments = {};
-                this.isPublic = false;
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+                alert("データの取得中にエラーが発生しました。");
             }
         },
         async saveCommentsAndVisited() {
@@ -135,7 +142,7 @@ createApp({
             if (!this.userId) return;
 
             try {
-                // visitedオブジェクトを保存用に整形 (true/falseを保持)
+                // visitedオブジェクトを保存用に整形
                 const visitedData = Object.fromEntries(
                     Object.entries(this.visited).filter(([_, value]) => value)
                 );
@@ -147,9 +154,7 @@ createApp({
                         displayName: this.userName,
                         isPublic: this.isPublic
                     },
-                    {
-                        merge: true
-                    }
+                    { merge: true }
                 );
             } catch (error) {
                 console.error("Error saving data: ", error);
@@ -193,6 +198,6 @@ createApp({
         },
         logout() {
             auth.signOut();
-        },
+        }
     }
 }).mount('#app');
