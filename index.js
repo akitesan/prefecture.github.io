@@ -197,7 +197,15 @@ createApp({
             }
         },
         logout() {
-            auth.signOut();
+            auth.signOut()
+                .then(() => {
+                    // ログアウトが成功したらログインページにリダイレクト
+                    window.location.href = 'login.html';
+                })
+                .catch((error) => {
+                    console.error("ログアウト中にエラーが発生しました:", error);
+                    alert("ログアウト中にエラーが発生しました。");
+                });
         }
     }
 }).mount('#app');
