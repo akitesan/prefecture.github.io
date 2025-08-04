@@ -11,32 +11,33 @@ const db = firebase.firestore();
 createApp({
     data() {
         return {
-            svgMap: '',
+            prefectures: [],
             visited: {},
+            comments: {},
             isLoggedIn: false,
             userName: '',
             userId: '',
             users: [],
             selectedUser: '',
             currentUser: null,
-            prefectures: [],
-            comments: {},
             isLoading: true,
-            error: null,
-            currentView: 'map',
-            isMobileView: false,
-            isPublic: false, // 公開/非公開の状態を追加
+            isPublic: false,
+            hideNoCommentPrefectures: false,
         };
     },
     computed: {
-        isCurrentUserMap() {
+        isCurrentUserList() {
             return this.selectedUser === this.userId;
         },
         otherUsers() {
             return this.users.filter(user => user.uid !== this.userId);
         },
         sortedPrefectures() {
-            return [...this.prefectures].sort((a, b) => a.code - b.code);
+            let list = [...this.prefectures].sort((a, b) => a.code - b.code);
+            if (this.hideNoCommentPrefectures) {
+                list = list.filter(prefecture => this.comments[prefecture.code] && this.comments[prefecture.code].trim() !== '');
+            }
+            return list;
         }
     },
     async mounted() {
@@ -56,7 +57,7 @@ createApp({
             if (!userDoc.exists) {
                 await userDocRef.set({
                     displayName: user.displayName || '名無し',
-                    isPublic: false // 初回ログイン時に非公開に設定
+                    isPublic: false
                 }, { merge: true });
             }
             this.fetchUsers();
@@ -64,61 +65,34 @@ createApp({
             window.location.href = 'login.html';
         }
 
-        const response = await fetch('map-full.svg');
-        this.svgMap = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(this.svgMap, "image/svg+xml");
-        const prefectureElements = doc.querySelectorAll('g.prefecture');
+        // 地図データを削除し、都道府県のリストを直接定義
+        const prefectureNames = [
+            '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
+            '茨城県', '栃木県', '群馬県', '埼玉県', '千葉県', '東京都', '神奈川県',
+            '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県', '岐阜県',
+            '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県',
+            '奈良県', '和歌山県', '鳥取県', '島根県', '岡山県', '広島県', '山口県',
+            '徳島県', '香川県', '愛媛県', '高知県', '福岡県', '佐賀県', '長崎県',
+            '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県'
+        ];
+        this.prefectures = prefectureNames.map((name, index) => ({
+            code: (index + 1).toString().padStart(2, '0'),
+            name: name
+        }));
 
-        this.prefectures = Array.from(prefectureElements).map(el => {
-            const code = el.getAttribute('data-code');
-            const titleElement = el.querySelector('title');
-            let name = '';
-            const fullTitle = titleElement.textContent;
-            name = fullTitle.split(' / ')[0].trim();
-            return { code: code, name: name };
-        });
         this.isLoading = false;
-        this.checkScreenSize();
-        window.addEventListener('resize', this.checkScreenSize);
     },
     methods: {
-        togglePrefecture(event) {
-            if (!this.isCurrentUserMap) {
-                alert("他のユーザーの地図は編集できません。");
-                return;
-            }
-            if (!this.isLoggedIn) {
-                alert("ログインしてください。");
-                return;
-            }
-            const g = event.target.closest('g[data-code]');
-            if (!g) return;
-            const code = g.getAttribute('data-code');
-            this.visited[code] = !this.visited[code];
-            g.classList.toggle('visited');
-            this.saveRemoteData();
-        },
-        applyVisitedStyles() {
-            this.$nextTick(() => {
-                document.querySelectorAll('g[data-code]').forEach(g => {
-                    g.classList.remove('visited', 'other-user-visited');
-                });
-                const className = this.isCurrentUserMap ? 'visited' : 'other-user-visited';
-                Object.keys(this.visited).forEach(code => {
-                    if (this.visited[code]) {
-                        const g = document.querySelector(`g[data-code="${code}"]`);
-                        if (g) g.classList.add(className);
-                    }
-                });
-            });
+        updateVisitedStatus() {
+            // チェックボックスの状態が変更されたときにvisitedオブジェクトを更新
+            // このメソッド自体は特に何もしないが、@changeイベントをトリガーするために必要
         },
         async fetchUsers() {
             const snapshot = await db.collection("users").get();
             this.users = snapshot.docs.map(doc => ({
                 uid: doc.id,
                 displayName: doc.data().displayName || '名無し',
-                isPublic: doc.data().isPublic || false // isPublic の状態を取得
+                isPublic: doc.data().isPublic || false
             }));
             this.fetchUserData();
         },
@@ -133,63 +107,62 @@ createApp({
                     comments,
                     ...visitedData
                 } = data;
-                this.visited = visitedData;
-                this.comments = comments || {};
-                this.isPublic = isPublic; // 公開状態を更新
-                if (!this.isCurrentUserMap && !isPublic) {
-                    alert("このユーザーの地図は非公開です。");
+
+                this.isPublic = isPublic;
+                if (!this.isCurrentUserList && !isPublic) {
+                    alert("このユーザーのリストは非公開です。");
                     this.visited = {};
                     this.comments = {};
                     this.isPublic = false;
                 } else {
-                    this.visited = visitedData;
+                    // visitedDataをboolean値に変換
+                    this.visited = Object.fromEntries(
+                        Object.entries(visitedData).map(([key, value]) => [key, !!value])
+                    );
                     this.comments = comments || {};
-                    this.isPublic = isPublic;
                 }
             } else {
                 this.visited = {};
                 this.comments = {};
                 this.isPublic = false;
             }
-            this.applyVisitedStyles();
         },
-        async saveRemoteData() {
-            if (!this.userId) return;
-            await db.collection("users").doc(this.userId).set(
-                {
-                    ...this.visited,
-                    displayName: this.userName,
-                    isPublic: this.isPublic // isPublic の状態を保存
-                }, {
-                merge: true
-            }
-            );
-        },
-        async saveComments() {
-            if (!this.isCurrentUserMap) {
-                alert("他のユーザーのコメントは保存できません。");
+        async saveCommentsAndVisited() {
+            if (!this.isCurrentUserList) {
+                alert("他のユーザーのデータは保存できません。");
                 return;
             }
             if (!this.userId) return;
+
             try {
+                // visitedオブジェクトを保存用に整形 (true/falseを保持)
+                const visitedData = Object.fromEntries(
+                    Object.entries(this.visited).filter(([_, value]) => value)
+                );
+
                 await db.collection("users").doc(this.userId).set(
                     {
-                        comments: this.comments
+                        ...visitedData,
+                        comments: this.comments,
+                        displayName: this.userName,
+                        isPublic: this.isPublic
                     },
                     {
                         merge: true
                     }
                 );
-                alert("コメントを保存しました。");
             } catch (error) {
-                console.error("Error saving comments: ", error);
-                alert("コメントの保存中にエラーが発生しました。");
+                console.error("Error saving data: ", error);
+                alert("データの保存中にエラーが発生しました。");
             }
         },
         async togglePublic() {
             this.isPublic = !this.isPublic;
-            this.saveRemoteData();
-            alert(`地図を${this.isPublic ? '公開' : '非公開'}にしました。`);
+            this.saveCommentsAndVisited();
+            alert(`リストを${this.isPublic ? '公開' : '非公開'}にしました。`);
+        },
+        toggleNoCommentPrefectures() {
+            this.hideNoCommentPrefectures = !this.hideNoCommentPrefectures;
         },
         async deleteMyData() {
             const user = auth.currentUser;
@@ -221,16 +194,5 @@ createApp({
         logout() {
             auth.signOut();
         },
-        toggleView(view) {
-            this.currentView = view;
-        },
-        checkScreenSize() {
-            // 画面幅が768px未満かどうかを判定
-            this.isMobileView = window.innerWidth < 768;
-        },
-    },
-    beforeUnmount() {
-        // コンポーネントが破棄される前にリスナーを削除
-        window.removeEventListener('resize', this.checkScreenSize);
     }
 }).mount('#app');

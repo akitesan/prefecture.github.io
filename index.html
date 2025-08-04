@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>都道府県マップ</title>
+    <title>都道府県チェックリスト</title>
     <link rel="stylesheet" href="index.css">
     <script src="https://unpkg.com/vue@3"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -20,42 +20,45 @@
                 <button @click="logout">ログアウト</button>
                 <button @click="deleteMyData">自分のアカウントを削除</button>
             </div>
-            <h1>日本地図</h1>
-            <p>訪れたことのある都道府県をクリックしてください</p>
+            <h1>都道府県チェックリスト</h1>
+            <p>訪れたことのある都道府県にチェックを入れてください</p>
             <div v-if="isLoggedIn">
                 <div class="user-controls">
-                    <label for="user-selector">地図を見るユーザーを選択：</label>
+                    <label for="user-selector">リストを見るユーザーを選択：</label>
                     <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
                         <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
                         <option v-for="(user, index) in otherUsers" :key="user.uid" :value="user.uid">
                             他のユーザー {{ index + 1 }}
                         </option>
                     </select>
-                    <button v-if="isCurrentUserMap" @click="togglePublic" class="public-toggle-btn">
+                    <button v-if="isCurrentUserList" @click="togglePublic" class="public-toggle-btn">
                         {{ isPublic ? '公開中' : '非公開中' }}
+                    </button>
+                    <button @click="toggleNoCommentPrefectures" class="toggle-comment-btn">
+                        {{ hideNoCommentPrefectures ? 'コメント無しを表示' : 'コメント無しを非表示' }}
                     </button>
                 </div>
             </div>
-            <div class="mobile-toggle">
-                <button @click="toggleView('map')" :class="{ active: currentView === 'map' }">地図</button>
-                <button @click="toggleView('list')" :class="{ active: currentView === 'list' }">コメント</button>
-            </div>
         </header>
-        <div class="map-container" v-html="svgMap" @click="togglePrefecture"
-            v-show="isMobileView ? currentView === 'map' : true"></div>
-        <main v-show="isMobileView ? currentView === 'list' : true">
-            <button @click="saveComments" class="save-btn">コメントを保存</button>
+        <main>
             <ul class="prefecture-list">
                 <li v-for="prefecture in sortedPrefectures" :key="prefecture.code" class="prefecture-item">
                     <div class="prefecture-info">
-                        <span class="prefecture-name">{{ prefecture.name }}</span>
+                        <input type="checkbox" :id="'prefecture-' + prefecture.code" v-model="visited[prefecture.code]"
+                            :disabled="!isCurrentUserList" @change="updateVisitedStatus">
+                        <label :for="'prefecture-' + prefecture.code" class="prefecture-name">{{ prefecture.name
+                            }}</label>
                     </div>
                     <div class="comment-section">
-                        <textarea v-model="comments[prefecture.code]" placeholder="コメントを入力"></textarea>
+                        <textarea v-model="comments[prefecture.code]" placeholder="コメントを入力"
+                            :disabled="!isCurrentUserList"></textarea>
                     </div>
                 </li>
             </ul>
         </main>
+        <footer>
+            <button @click="saveCommentsAndVisited" class="save-btn">保存</button>
+        </footer>
     </div>
     <script src="index.js"></script>
 </body>
