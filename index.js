@@ -1,5 +1,3 @@
-// index.js
-
 const { createApp } = Vue;
 const config = {
     apiKey: "AIzaSyAjBXKNDW7DGy5kL6Ec84RL29fv1GbqlPs",
@@ -24,8 +22,7 @@ createApp({
             currentUser: null,
             isLoading: true,
             isPublic: false,
-            hideNoCommentPrefectures: false,
-            isLoading: true
+            hideNoCommentPrefectures: false
         };
     },
     computed: {
@@ -54,17 +51,23 @@ createApp({
             this.currentUser = { uid: user.uid, displayName: user.displayName };
             this.selectedUser = this.userId;
 
-            // ユーザーデータが存在しない場合は作成
             const userDocRef = db.collection("users").doc(user.uid);
-            await userDocRef.set({
-                displayName: user.displayName || '名無し',
-                isPublic: false
-            }, { merge: true });
+            const userDoc = await userDocRef.get();
 
-            // ユーザーと都道府県データの両方を並行して取得
+            if (userDoc.exists) {
+                const data = userDoc.data();
+                this.isPublic = data.isPublic;
+            } else {
+                this.isPublic = false;
+                await userDocRef.set({
+                    displayName: user.displayName || '名無し',
+                    isPublic: this.isPublic
+                }, { merge: true });
+            }
+
             await Promise.all([
-                this.fetchUsers(),
-                this.initializePrefectures()
+                this.initializePrefectures(),
+                this.fetchUsers()
             ]);
 
             this.isLoading = false;
@@ -73,7 +76,6 @@ createApp({
         }
     },
     methods: {
-        // 都道府県リストの初期化をメソッドとして分離
         initializePrefectures() {
             const prefectureNames = [
                 '北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県',
@@ -111,30 +113,29 @@ createApp({
                     const data = doc.data();
                     const { displayName, isPublic, comments, ...visitedData } = data;
 
-                    this.isPublic = isPublic;
+                    if (this.selectedUser === this.userId) {
+                        this.isPublic = isPublic;
+                    }
+
                     if (!this.isCurrentUserList && !isPublic) {
                         alert("このユーザーのリストは非公開です。");
                         this.visited = {};
                         this.comments = {};
-                        this.isPublic = false;
                     } else {
-                        // visitedDataをboolean値に変換し、visitedオブジェクトを更新
                         this.visited = Object.fromEntries(
                             Object.entries(visitedData).map(([key, value]) => [key, !!value])
                         );
                         this.comments = comments || {};
                     }
                 } else {
-                    this.visited = {};
-                    this.comments = {};
                     this.isPublic = false;
                 }
             } catch (error) {
-                console.error("Error fetching user data:", error);
+                console.error("データの取得中にエラーが発生しました:", error);
                 alert("データの取得中にエラーが発生しました。");
             }
         },
-        async saveCommentsAndVisited() {
+        async saveCommentsAndVisited(showAlert = true) {
             if (!this.isCurrentUserList) {
                 alert("他のユーザーのデータは保存できません。");
                 return;
@@ -142,7 +143,6 @@ createApp({
             if (!this.userId) return;
 
             try {
-                // visitedオブジェクトを保存用に整形
                 const visitedData = Object.fromEntries(
                     Object.entries(this.visited).filter(([_, value]) => value)
                 );
@@ -156,6 +156,9 @@ createApp({
                     },
                     { merge: true }
                 );
+                if (showAlert) {
+                    alert("保存しました。");
+                }
             } catch (error) {
                 console.error("Error saving data: ", error);
                 alert("データの保存中にエラーが発生しました。");
@@ -163,7 +166,7 @@ createApp({
         },
         async togglePublic() {
             this.isPublic = !this.isPublic;
-            this.saveCommentsAndVisited();
+            this.saveCommentsAndVisited(false);
             alert(`リストを${this.isPublic ? '公開' : '非公開'}にしました。`);
         },
         toggleNoCommentPrefectures() {
@@ -199,7 +202,6 @@ createApp({
         logout() {
             auth.signOut()
                 .then(() => {
-                    // ログアウトが成功したらログインページにリダイレクト
                     window.location.href = 'login.html';
                 })
                 .catch((error) => {

@@ -14,51 +14,58 @@
 
 <body>
     <div id="app">
-        <header>
-            <div class="user-info" v-if="isLoggedIn">
-                <span>ようこそ、{{ userName }}さん！</span>
-                <button @click="logout">ログアウト</button>
-                <button @click="deleteMyData">自分のアカウントを削除</button>
-            </div>
-            <h1>都道府県チェックリスト</h1>
-            <p>訪れたことのある都道府県にチェックを入れてください</p>
-            <div v-if="isLoggedIn">
-                <div class="user-controls">
-                    <label for="user-selector">リストを見るユーザーを選択：</label>
-                    <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
-                        <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
-                        <option v-for="(user, index) in otherUsers" :key="user.uid" :value="user.uid">
-                            他のユーザー {{ index + 1 }}
-                        </option>
-                    </select>
-                    <button v-if="isCurrentUserList" @click="togglePublic" class="public-toggle-btn">
-                        {{ isPublic ? '公開中' : '非公開中' }}
-                    </button>
-                    <button @click="toggleNoCommentPrefectures" class="toggle-comment-btn">
-                        {{ hideNoCommentPrefectures ? 'コメント無しを表示' : 'コメント無しを非表示' }}
-                    </button>
+        <div v-if="isLoading" class="loading">
+            <p>データを読み込み中です...</p>
+        </div>
+
+        <div v-if="!isLoading">
+            <header>
+                <div class="user-info" v-if="isLoggedIn">
+                    <span>ようこそ、{{ userName }}さん！</span>
+                    <button @click="logout">ログアウト</button>
+                    <button @click="deleteMyData">自分のアカウントを削除</button>
                 </div>
-            </div>
-        </header>
-        <main>
-            <ul class="prefecture-list">
-                <li v-for="prefecture in sortedPrefectures" :key="prefecture.code" class="prefecture-item">
-                    <div class="prefecture-info">
-                        <input type="checkbox" :id="'prefecture-' + prefecture.code" v-model="visited[prefecture.code]"
-                            :disabled="!isCurrentUserList" @change="updateVisitedStatus">
-                        <label :for="'prefecture-' + prefecture.code" class="prefecture-name">{{ prefecture.name
-                            }}</label>
+                <h1>都道府県チェックリスト</h1>
+                <p>訪れたことのある都道府県にチェックを入れてください</p>
+                <div v-if="isLoggedIn">
+                    <div class="user-controls">
+                        <label for="user-selector">リストを見るユーザーを選択：</label>
+                        <select id="user-selector" v-model="selectedUser" @change="fetchUserData">
+                            <option :value="currentUser.uid">{{ currentUser.displayName }} (自分)</option>
+                            <option v-for="(user, index) in otherUsers" :key="user.uid" :value="user.uid">
+                                他のユーザー {{ index + 1 }}
+                            </option>
+                        </select>
+                        <button v-if="isCurrentUserList" @click="togglePublic" class="public-toggle-btn">
+                            {{ isPublic ? '公開中' : '非公開中' }}
+                        </button>
+                        <button @click="toggleNoCommentPrefectures" class="toggle-comment-btn">
+                            {{ hideNoCommentPrefectures ? 'コメント無しを表示' : 'コメント無しを非表示' }}
+                        </button>
                     </div>
-                    <div class="comment-section">
+                </div>
+            </header>
+            <main>
+                <ul class="prefecture-list">
+                    <li v-for="prefecture in sortedPrefectures" :key="prefecture.code" class="prefecture-item">
+                        <div class="prefecture-info">
+                            <input type="checkbox" :id="'prefecture-' + prefecture.code"
+                                v-model="visited[prefecture.code]" :disabled="!isCurrentUserList"
+                                @change="updateVisitedStatus">
+                            <label :for="'prefecture-' + prefecture.code" class="prefecture-name">{{ prefecture.name
+                                }}</label>
+                        </div>
+                        <div class="comment-section">
                         <textarea v-model="comments[prefecture.code]" placeholder="コメントを入力"
                             :disabled="!isCurrentUserList"></textarea>
-                    </div>
-                </li>
-            </ul>
-        </main>
-        <footer>
-            <button @click="saveCommentsAndVisited" class="save-btn">保存</button>
-        </footer>
+                        </div>
+                    </li>
+                </ul>
+            </main>
+            <footer>
+                <button @click="saveCommentsAndVisited()" class="save-btn">保存</button>
+            </footer>
+        </div>
     </div>
     <script src="index.js"></script>
 </body>
