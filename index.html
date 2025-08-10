@@ -51,8 +51,7 @@
                     <li v-for="prefecture in sortedPrefectures" :key="prefecture.code" class="prefecture-item">
                         <div class="prefecture-info">
                             <input type="checkbox" :id="'prefecture-' + prefecture.code"
-                                v-model="visited[prefecture.code]" :disabled="!isCurrentUserList"
-                                @change="updateVisitedStatus">
+                                v-model="visited[prefecture.code]" :disabled="!isCurrentUserList">
                             <label :for="'prefecture-' + prefecture.code" class="prefecture-name">{{ prefecture.name
                                 }}</label>
                         </div>
