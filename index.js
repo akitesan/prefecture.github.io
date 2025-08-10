@@ -38,6 +38,9 @@ createApp({
                 list = list.filter(prefecture => this.comments[prefecture.code] && this.comments[prefecture.code].trim() !== '');
             }
             return list;
+        },
+        visitedCount() {
+            return Object.values(this.visited).filter(value => value).length;
         }
     },
     async mounted() {

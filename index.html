@@ -27,6 +27,7 @@
                 </div>
                 <h1>都道府県チェックリスト</h1>
                 <p>訪れたことのある都道府県にチェックを入れてください</p>
+                <p>全国制覇まで残り: {{ prefectures.length-visitedCount }}</p>
                 <div v-if="isLoggedIn">
                     <div class="user-controls">
                         <label for="user-selector">リストを見るユーザーを選択：</label>
